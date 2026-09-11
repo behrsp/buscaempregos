@@ -1,0 +1,6 @@
+{
+  "name": "VagaMatch ATS - Empregos & Perfil IA",
+  "description": "Plataforma inteligente para cadastro de competências, otimização ATS com IA, busca de vagas no LinkedIn e Google, e candidatura rápida automatizada com Neon DB.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
