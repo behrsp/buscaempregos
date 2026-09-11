@@ -39,10 +39,36 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers,
   });
 
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || `Erro na requisição: ${res.status}`);
+  const contentType = res.headers.get('content-type') || '';
+  let data: any = null;
+
+  if (contentType.includes('application/json')) {
+    try {
+      data = await res.json();
+    } catch {
+      data = null;
+    }
   }
+
+  if (!res.ok) {
+    if (data && data.error) {
+      throw new Error(data.error);
+    }
+    const rawText = await res.text().catch(() => '');
+    if (res.status === 404) {
+      throw new Error('Serviço de API não encontrado (404). Verifique as rotas de backend na hospedagem.');
+    }
+    throw new Error(`Erro na requisição (${res.status}): ${rawText.slice(0, 120) || res.statusText}`);
+  }
+
+  if (!data) {
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error('Resposta inválida do servidor.');
+    }
+  }
+
   return data as T;
 }
 

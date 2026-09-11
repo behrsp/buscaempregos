@@ -24,6 +24,33 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// URL normalizer for serverless deployments (Vercel)
+app.use((req, res, next) => {
+  // If request doesn't have /api prefix and is an API call, normalize it
+  if (
+    !req.url.startsWith('/api') && 
+    !req.url.startsWith('/assets') && 
+    !req.url.startsWith('/@') &&
+    !req.url.startsWith('/node_modules') &&
+    req.url !== '/' &&
+    !req.url.includes('.')
+  ) {
+    req.url = '/api' + (req.url.startsWith('/') ? req.url : '/' + req.url);
+  }
+  next();
+});
+
+// Lazy DB schema initializer for serverless environments (e.g. Vercel)
+let schemaInitPromise: Promise<void> | null = null;
+app.use(async (req, res, next) => {
+  if (!schemaInitPromise) {
+    schemaInitPromise = initDbSchema().catch((err) => {
+      console.warn('initDbSchema lazy warning:', (err as Error).message);
+    });
+  }
+  next();
+});
+
 // In-memory fallback repository in case of database network latency
 const memoryDb = {
   users: new Map<number, any>(),
@@ -1199,4 +1226,10 @@ async function startServer() {
   });
 }
 
-startServer();
+// In local dev and Cloud Run / Docker containers, start the server
+// In Vercel serverless functions, export app without calling app.listen
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;
