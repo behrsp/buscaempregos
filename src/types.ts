@@ -65,7 +65,7 @@ export interface Job {
   company: string;
   company_logo?: string;
   location: string;
-  modality: 'Remoto' | 'Híbrido' | 'Presencial';
+  modality: 'Remoto' | 'Híbrido' | 'Presencial' | 'Todas';
   salary_text: string;
   salary_min?: number;
   salary_max?: number;

@@ -483,6 +483,7 @@ export const ProfileView: React.FC<{ onOpenAtsModal: () => void }> = ({ onOpenAt
                 onChange={(e) => setModality(e.target.value)}
                 className="w-full px-3 py-2 text-xs bg-slate-900 border border-slate-700/80 rounded-xl text-white focus:outline-none focus:border-indigo-500 font-medium"
               >
+                <option value="Todas">Todas (Remoto, Híbrido ou Presencial)</option>
                 <option value="Remoto">Remoto</option>
                 <option value="Híbrido">Híbrido</option>
                 <option value="Presencial">Presencial</option>

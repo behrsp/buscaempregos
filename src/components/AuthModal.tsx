@@ -34,7 +34,7 @@ export const AuthModal: React.FC = () => {
   const [location, setLocation] = useState('São Paulo, SP - Brasil');
   const [salaryMin, setSalaryMin] = useState(10000);
   const [salaryMax, setSalaryMax] = useState(18000);
-  const [modality, setModality] = useState('Remoto');
+  const [modality, setModality] = useState('Todas');
   const [avatarUrl, setAvatarUrl] = useState('');
 
   if (!isAuthModalOpen) return null;
@@ -46,15 +46,15 @@ export const AuthModal: React.FC = () => {
 
     try {
       if (mode === 'login') {
-        await login(email, password);
+        await login(email.trim(), password.trim());
       } else {
         await register({
-          email,
-          password,
-          fullName,
-          headline: headline || 'Profissional de Tecnologia',
-          phone,
-          location,
+          email: email.trim(),
+          password: password.trim(),
+          fullName: fullName.trim(),
+          headline: headline.trim() || 'Profissional de Tecnologia',
+          phone: phone.trim(),
+          location: location.trim(),
           salaryMin,
           salaryMax,
           modality,
@@ -134,10 +134,34 @@ export const AuthModal: React.FC = () => {
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
           {error && (
-            <div className="p-3 text-xs text-rose-300 bg-rose-950/40 border border-rose-800/60 rounded-xl">
-              {error}
+            <div className="p-3.5 text-xs text-rose-200 bg-rose-950/60 border border-rose-800/80 rounded-xl space-y-2">
+              <p className="font-semibold text-rose-300">{error}</p>
+              {mode === 'login' && (
+                <div className="pt-2 border-t border-rose-900/60 flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-rose-200/90">Primeira vez por aqui?</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('register');
+                      setError(null);
+                    }}
+                    className="px-3 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow transition-colors flex items-center gap-1 shrink-0"
+                  >
+                    <span>Criar Perfil Agora</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
           )}
+
+          {/* Reassurance banner for Neon DB */}
+          <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-300 flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>
+              <strong className="text-white">Neon DB Conectado:</strong> Não é necessário Clerk. Os dados são salvos diretamente no seu banco de dados.
+            </span>
+          </div>
 
           {mode === 'register' && (
             <>
@@ -283,6 +307,7 @@ export const AuthModal: React.FC = () => {
                     onChange={(e) => setModality(e.target.value)}
                     className="w-full px-2 py-2 text-xs bg-slate-950 border border-slate-700/80 rounded-xl text-white focus:outline-none focus:border-indigo-500"
                   >
+                    <option value="Todas">Todas (Remoto, Híbrido ou Presencial)</option>
                     <option value="Remoto">Remoto</option>
                     <option value="Híbrido">Híbrido</option>
                     <option value="Presencial">Presencial</option>
@@ -325,19 +350,19 @@ export const AuthModal: React.FC = () => {
             </div>
           </div>
 
-          {/* Clerk & Security Information Note */}
-          <div className="p-3 rounded-xl bg-indigo-950/30 border border-indigo-800/40 text-[11px] text-slate-300 flex items-start gap-2">
-            <ShieldCheck className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
+          {/* Security Information Note */}
+          <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-[11px] text-slate-300 flex items-start gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
             <div>
-              <p className="font-semibold text-indigo-200">Autenticação Integrada com Neon DB & Clerk</p>
+              <p className="font-semibold text-white">Autenticação Segura no Neon DB</p>
               <p className="text-slate-400 mt-0.5">
-                Suas senhas são criptografadas com bcrypt e persistidas diretamente na sua base PostgreSQL do Neon DB.
+                Seus dados e senhas são criptografados com bcrypt e persistidos na sua base PostgreSQL do Neon DB. Não é necessário Clerk ou chaves externas.
               </p>
             </div>
           </div>
 
           {/* Submit Button */}
-          <div className="pt-2">
+          <div className="pt-2 space-y-2">
             <button
               type="submit"
               disabled={loading}
@@ -352,6 +377,33 @@ export const AuthModal: React.FC = () => {
                 </>
               )}
             </button>
+
+            {/* Quick Switch Button */}
+            <div className="text-center pt-1">
+              {mode === 'login' ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('register');
+                    setError(null);
+                  }}
+                  className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+                >
+                  Novo por aqui? <span className="underline font-bold">Criar perfil completo grátis</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setError(null);
+                  }}
+                  className="text-xs text-slate-400 hover:text-slate-300 font-medium transition-colors"
+                >
+                  Já tem conta cadastrada? <span className="underline font-semibold text-indigo-400">Entrar com e-mail e senha</span>
+                </button>
+              )}
+            </div>
           </div>
 
         </form>

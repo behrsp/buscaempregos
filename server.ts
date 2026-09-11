@@ -62,21 +62,25 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
       avatarUrl 
     } = req.body;
 
-    if (!email || !password || !fullName) {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanPassword = (password || '').trim();
+    const cleanFullName = (fullName || '').trim();
+
+    if (!cleanEmail || !cleanPassword || !cleanFullName) {
       res.status(400).json({ error: 'E-mail, senha e nome completo são obrigatórios.' });
       return;
     }
 
-    const hashedPassword = await hashPassword(password);
-    const defaultAvatar = avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(email)}`;
+    const hashedPassword = await hashPassword(cleanPassword);
+    const defaultAvatar = avatarUrl || '';
     let userId: number;
     let createdUser: any;
 
     try {
       // Try Neon DB
-      const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
+      const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [cleanEmail]);
       if (existingUser.rows.length > 0) {
-        res.status(409).json({ error: 'Este e-mail já está cadastrado. Faça login.' });
+        res.status(409).json({ error: 'Este e-mail já está cadastrado. Por favor, clique na aba "Já tenho conta (Login)".' });
         return;
       }
 
@@ -85,16 +89,16 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          RETURNING id, email, full_name, avatar_url, phone, headline, location, salary_min, salary_max, modality, created_at`,
         [
-          email.toLowerCase(), 
+          cleanEmail, 
           hashedPassword, 
-          fullName, 
+          cleanFullName, 
           defaultAvatar, 
-          phone || '(11) 98765-4321', 
-          headline || 'Desenvolvedor Full Stack | React • Node.js', 
-          location || 'São Paulo, SP - Brasil',
-          Number(salaryMin) || 8000, 
-          Number(salaryMax) || 16000, 
-          modality || 'Remoto'
+          phone || '', 
+          headline || 'Profissional de Tecnologia', 
+          location || 'Brasil',
+          Number(salaryMin) || 10000, 
+          Number(salaryMax) || 18000, 
+          modality || 'Todas'
         ]
       );
       createdUser = insertRes.rows[0];
@@ -189,7 +193,10 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
 app.post('/api/auth/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanPassword = (password || '').trim();
+
+    if (!cleanEmail || !cleanPassword) {
       res.status(400).json({ error: 'E-mail e senha são obrigatórios.' });
       return;
     }
@@ -197,7 +204,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     let user: any = null;
 
     try {
-      const dbRes = await pool.query('SELECT * FROM users WHERE email = $1', [email.toLowerCase()]);
+      const dbRes = await pool.query('SELECT * FROM users WHERE email = $1', [cleanEmail]);
       if (dbRes.rows.length > 0) {
         user = dbRes.rows[0];
       }
@@ -208,7 +215,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     if (!user) {
       // Check memory store
       for (const u of memoryDb.users.values()) {
-        if (u.email === email.toLowerCase()) {
+        if (u.email === cleanEmail) {
           user = u;
           break;
         }
@@ -216,13 +223,16 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     }
 
     if (!user) {
-      res.status(401).json({ error: 'Credenciais inválidas. Usuário não encontrado.' });
+      res.status(404).json({ 
+        error: 'E-mail ainda não cadastrado. Clique em "Criar Perfil Completo" para criar sua conta gratuitamente.',
+        notFound: true
+      });
       return;
     }
 
-    const isMatch = await comparePassword(password, user.password_hash);
+    const isMatch = await comparePassword(cleanPassword, user.password_hash);
     if (!isMatch) {
-      res.status(401).json({ error: 'Senha incorreta. Verifique seus dados.' });
+      res.status(401).json({ error: 'Senha incorreta. Verifique a senha digitada.' });
       return;
     }
 
@@ -682,7 +692,7 @@ app.get('/api/jobs', async (req: Request, res: Response) => {
       query += ` AND (title ILIKE $${params.length} OR company ILIKE $${params.length} OR description ILIKE $${params.length})`;
     }
 
-    if (modality && modality !== 'Todos') {
+    if (modality && modality !== 'Todos' && modality !== 'Todas') {
       params.push(`%${modality}%`);
       query += ` AND modality ILIKE $${params.length}`;
     }
@@ -758,7 +768,12 @@ app.get('/api/jobs', async (req: Request, res: Response) => {
         const baseMatch = reqs.length > 0 ? (matchedCount / reqs.length) * 100 : 75;
         // Modality bonus
         let modalityBonus = 0;
-        if (userModality && job.modality && (job.modality.includes(userModality) || job.modality.includes('Remoto'))) {
+        if (
+          !userModality || 
+          userModality === 'Todas' || 
+          userModality === 'Todos' || 
+          (job.modality && (job.modality.includes(userModality) || job.modality.includes('Remoto')))
+        ) {
           modalityBonus += 8;
         }
 
