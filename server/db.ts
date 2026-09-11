@@ -3,6 +3,7 @@ import pg from 'pg';
 const { Pool } = pg;
 
 const NEON_CONN_STRING = process.env.NEON_DATABASE_URL || 
+  process.env.DATABASE_URL ||
   'postgresql://neondb_owner:npg_uhaz4DQ7GWwq@ep-calm-bar-acbr3crl-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
 
 export const pool = new Pool({
@@ -10,9 +11,9 @@ export const pool = new Pool({
   ssl: {
     rejectUnauthorized: false
   },
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
+  max: 5,
+  idleTimeoutMillis: 15000,
+  connectionTimeoutMillis: 5000,
 });
 
 let isDbConnected = false;
@@ -34,7 +35,10 @@ export function isConnected(): boolean {
   return isDbConnected;
 }
 
+let hasSchemaInitialized = false;
+
 export async function initDbSchema(): Promise<void> {
+  if (hasSchemaInitialized) return;
   try {
     console.log('🔄 Inicializando tabelas no Neon DB se não existirem...');
     
@@ -176,6 +180,7 @@ export async function initDbSchema(): Promise<void> {
     
     // Seed initial curated vacancies if empty
     await seedJobsIfEmpty();
+    hasSchemaInitialized = true;
   } catch (err) {
     console.error('⚠️ Erro ao inicializar esquema no Neon DB:', (err as Error).message);
   }
